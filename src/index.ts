@@ -44,14 +44,13 @@ app.post('/api/referrals', async (req: Request, res: Response) => {
   try {
     const resp = await prisma.referral.findFirst({
       where:{
-        referrerEmail:referrerEmail,
         refereeEmail:refereeEmail,
       }
     })
     if(resp){
       return res.json({
         success:false,
-        message:"You've already referred this person before."
+        message:"This person has already been referred"
       })
     }
     const referral = await prisma.referral.create({
