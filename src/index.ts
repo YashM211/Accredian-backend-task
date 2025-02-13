@@ -29,19 +29,31 @@ const referralSchema = z.object({
 
 
 // Define a type based on the schema
-type ReferralInput = z.infer<typeof referralSchema>;
+// type ReferralInput = z.infer<typeof referralSchema>;
 
 app.post('/api/referrals', async (req: Request, res: Response) => {
   const validationResult = referralSchema.safeParse(req.body);
 
   if (!validationResult.success) {
-    return res.status(400).json({ error: 'Check your inputs' }); // ✅ No more error
+    return res.status(400).json({ success:false , message: 'Check your inputs' }); // ✅ No more error
   }
 
   const { referrerName, referrerEmail, refereeName, refereeEmail } = validationResult.data;
   
 
   try {
+    const resp = await prisma.referral.findFirst({
+      where:{
+        referrerEmail:referrerEmail,
+        refereeEmail:refereeEmail,
+      }
+    })
+    if(resp){
+      return res.json({
+        success:false,
+        message:"You've already referred this person before."
+      })
+    }
     const referral = await prisma.referral.create({
       data: {
         referrerName,
@@ -50,6 +62,7 @@ app.post('/api/referrals', async (req: Request, res: Response) => {
         refereeEmail,
       },
     });
+
 
     console.log('Referral created:', referral);
 
@@ -78,11 +91,11 @@ app.post('/api/referrals', async (req: Request, res: Response) => {
         return res.status(500).json({ error: 'Failed to send email' });
       }
       console.log('Email sent:', info.response);
-      res.status(200).json({ message: 'Referral saved and email sent', referral });
+      return res.status(200).json({success:true, message: `You have referred ${refereeName}` });
     });
   } catch (error) {
     console.error('Error creating referral:', error);
-    res.status(500).json({ error: 'Failed to save referral', details: (error as Error).message });
+    return res.status(500).json({success:false, message: 'Something went wrong' });
   }
 });
 
